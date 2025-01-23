@@ -1,6 +1,6 @@
+import { useAuth } from "../context/AuthContext"
 import {
   calculateCurrentCaffeineLevel,
-  coffeeConsumptionHistory,
   statusLevels,
   calculateCoffeeStats,
   getTopThreeCoffees,
@@ -8,7 +8,6 @@ import {
 
 function StatCard(props) {
   const { lg, title, children } = props
-
   return (
     <div className={`card stat-card ${lg ? "col-span-2" : ""}`}>
       <h4>{title}</h4>
@@ -18,9 +17,11 @@ function StatCard(props) {
 }
 
 export default function Stats() {
-  const stats = calculateCoffeeStats(coffeeConsumptionHistory)
+  const { globalData } = useAuth()
 
-  const caffeineLevel = calculateCurrentCaffeineLevel(coffeeConsumptionHistory)
+  const stats = calculateCoffeeStats(globalData)
+
+  const caffeineLevel = calculateCurrentCaffeineLevel(globalData)
   const warningLevel =
     caffeineLevel < statusLevels["low"].maxLevel
       ? "low"
@@ -83,17 +84,15 @@ export default function Stats() {
           </thead>
 
           <tbody>
-            {getTopThreeCoffees(coffeeConsumptionHistory).map(
-              (coffee, index) => {
-                return (
-                  <tr key={index}>
-                    <td>{coffee.coffeeName}</td>
-                    <td>{coffee.count}</td>
-                    <td>{coffee.percentage}</td>
-                  </tr>
-                )
-              }
-            )}
+            {getTopThreeCoffees(globalData).map((coffee, index) => {
+              return (
+                <tr key={index}>
+                  <td>{coffee.coffeeName}</td>
+                  <td>{coffee.count}</td>
+                  <td>{coffee.percentage}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

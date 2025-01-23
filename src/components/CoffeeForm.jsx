@@ -2,6 +2,9 @@ import { coffeeOptions } from "../utils"
 import { useState } from "react"
 import Authentication from "./Authentication"
 import Modal from "./Modal"
+import { useAuth } from "../context/AuthContext"
+import { doc, setDoc } from "firebase/firestore"
+import { db } from "../../firebase"
 
 export default function CoffeeForm(props) {
   const { isAuthenticated } = props
@@ -12,12 +15,41 @@ export default function CoffeeForm(props) {
   const [min, setMin] = useState(0)
   const [showModal, setShowModal] = useState(false)
 
-  function handleSubmitForm() {
+  const { globalData, setGlobalData, globalUser } = useAuth()
+
+  async function handleSubmitForm() {
     if (!isAuthenticated) {
       setShowModal(true)
       return
     }
-    console.log(selectedCoffee, coffeeCost, hour, min)
+
+    if (!selectedCoffee) return
+
+    const newData = {
+      name: selectedCoffee,
+      cost: coffeeCost,
+    }
+
+    const newGlobalData = { ...(globalData || {}) }
+
+    const nowTime = Date.now()
+    const timeToSubtract = hour * 60 * 60 * 1000 + min * 60 * 100
+    const timestamp = nowTime - timeToSubtract
+
+    newGlobalData[timestamp] = newData
+    console.log(timestamp, selectedCoffee, coffeeCost)
+    setGlobalData(newGlobalData)
+
+    const userRef = doc(db, "users", globalUser.uid)
+
+    await setDoc(
+      userRef,
+      {
+        [timestamp]: newData,
+      },
+      { merge: true }
+    )
+
     setSelectedCoffee("")
     setCoffeeCost(0)
     setHour(0)
@@ -25,11 +57,15 @@ export default function CoffeeForm(props) {
     setShowCoffeeOptions(false)
   }
 
+  function handleCloseModal() {
+    setShowModal(false)
+  }
+
   return (
     <>
       {showModal && (
-        <Modal handleCloseModal={() => setShowModal(false)}>
-          <Authentication />
+        <Modal handleCloseModal={handleCloseModal}>
+          <Authentication handleCloseModal={handleCloseModal} />
         </Modal>
       )}
       <div className='section-header'>
